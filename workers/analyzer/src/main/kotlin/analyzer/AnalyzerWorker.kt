@@ -19,6 +19,8 @@
 
 package org.eclipse.apoapsis.ortserver.workers.analyzer
 
+import java.io.File
+import kotlinx.coroutines.delay
 import org.eclipse.apoapsis.ortserver.dao.dbQuery
 import org.eclipse.apoapsis.ortserver.model.AnalyzerJob
 import org.eclipse.apoapsis.ortserver.model.JobStatus
@@ -98,6 +100,21 @@ internal class AnalyzerWorker(
         db.dbQuery {
             getValidAnalyzerJob(jobId)
             ortRunService.storeAnalyzerRun(analyzerRun.mapToModel(jobId))
+        }
+
+        val tempDir = System.getProperty("java.io.tmpdir")
+        val filePath = "$tempDir/stay-alive"
+        val file = File(filePath)
+        logger.info("wklenk --- Checking for file $filePath")
+
+        while (true) {
+            if (file.exists()) {
+                println("wklenk --- File exists. Sleeping for 30 seconds...")
+                delay(30000) // Sleep for 30 seconds
+            } else {
+                println("wklenk --- File does not exist. Continuing ...")
+                break
+            }
         }
 
         RunResult.Success

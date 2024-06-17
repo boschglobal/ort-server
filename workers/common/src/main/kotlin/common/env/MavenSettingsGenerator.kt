@@ -80,6 +80,25 @@ class MavenSettingsGenerator : EnvironmentConfigGenerator<MavenDefinition> {
 
             println("</servers>".prependIndent(INDENT_4_SPACES))
 
+            println(
+                """
+  <mirrors>
+    <!-- Get everything mirrored through our internal Bosch Artifactory -->
+    <mirror>
+      <id>internal-mirror-maven</id>
+      <name>RB-Artifactory Mirror for Maven Central</name>
+      <url>https://rb-artifactory.bosch.com/artifactory/maven-central-remote/</url>
+      <mirrorOf>*,!rb-artifactory-eclipse,!rb-artifactory-maven-eclipse,!rb-artifactory-tycho-snapshots,!rb-artifactory-justj</mirrorOf>
+    </mirror>
+    <mirror>
+      <id>internal</id>
+      <name>RB-Artifactory Mirror for Eclipse stuff</name>
+      <url>https://rb-artifactory.bosch.com/artifactory/</url>
+      <mirrorOf>!central,rb-artifactory-eclipse,rb-artifactory-maven-eclipse,rb-artifactory-tycho-snapshots,rb-artifactory-justj</mirrorOf>
+    </mirror>
+  </mirrors>                
+                """.trimIndent())
+
             // Having the choice to get the proxy settings either from environment variables like HTTP_PROXY or
             // from Java system like http.proxyHost, prefer the latter, because everything is already
             // in the right format required for the <proxy> section.

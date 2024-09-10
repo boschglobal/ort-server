@@ -112,6 +112,7 @@ internal val fullJobConfigurations = JobConfigurations(
                 options = mapOf("gradleVersion" to "8.1.1")
             )
         ),
+        ignoreSubmodules = true,
         skipExcluded = true
     ),
     advisor = AdvisorJobConfiguration(

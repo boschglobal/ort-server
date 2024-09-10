@@ -81,6 +81,12 @@ data class AnalyzerJobConfiguration(
     val environmentConfig: EnvironmentConfig? = null,
 
     /**
+     * A flag indicating whether the Git submodules of the repository should be ignored during the download process.
+     * If set to `true`, submodules will not be downloaded; if `false`, they will be included.
+     */
+    val ignoreSubmodules: Boolean = false,
+
+    /**
      * The list of package curation providers to use.
      */
     val packageCurationProviders: List<ProviderPluginConfiguration> = emptyList(),

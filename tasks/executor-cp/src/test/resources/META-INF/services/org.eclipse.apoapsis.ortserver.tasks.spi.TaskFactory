@@ -1,0 +1,3 @@
+org.eclipse.apoapsis.ortserver.tasks.executors.cp.TaskFactory1
+org.eclipse.apoapsis.ortserver.tasks.executors.cp.TaskFactory2
+org.eclipse.apoapsis.ortserver.tasks.executors.cp.ExceptionTaskFactory

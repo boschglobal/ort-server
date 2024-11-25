@@ -1,0 +1,14 @@
+= Demo Task
+
+This module contains a task implementation to demonstrate the usage of functionality how to define and package tasks.
+
+The task implementation consists of two classes:
+
+* link:src/main/kotlin/DemoTask.kt[DemoTask] implements the actual task logic. It uses an `OrtRunRepository` to query the database for the currently active ORT runs. The query result is then just logged to the console.
+* link:src/main/kotlin/DemoTaskFactory.kt[DemoTaskFactory] is the corresponding `TaskFactory`. It makes use of the `AbstractDITask` base class to have dependency injection available for the task implementation. For this purpose, it defines a https://insert-koin.io/docs/reference/koin-core/modules[Koin module] with the affected classes and their dependencies. It also references the _database_ module from ORT Server, which enables access to the database.
+
+The packaging of the task is handled by the link:build.gradle.kts[Build script]. The script contains a configuration to build a container image with the https://github.com/GoogleContainerTools/jib/blob/master/jib-gradle-plugin/README.md[Jib Gradle plugin]. As the main class of the container image, it sets `ClassPathExecutorKt`. This task executor implementation uses a Java Service Loader to load all task implementations from the classpath. (Refer to the `META-INF/services` directory under the resources of this project.) So, in this concrete case, the demo task is going to be executed whenever the container image is launched.
+
+This container image could now be deployed for example as a Kubernetes Cron job with a custom schedule.
+
+NOTE: For reasons of simplicity, this demo project contains both a task implementation and a build script to package the task. In practice, however, these two parts would typically be separated: The ORT Server project contains implementations for standard maintenance tasks. Those can be referenced from external projects and packaged into container images (or using a different deployment mechanism) as suitable. The packaged tasks can then be executed via an external scheduler.

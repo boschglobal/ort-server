@@ -28,6 +28,9 @@ import java.util.EnumSet
  * files.
  */
 enum class LogLevel {
+    /** The log level TRACE. */
+    TRACE,
+
     /** The log level DEBUG. */
     DEBUG,
 

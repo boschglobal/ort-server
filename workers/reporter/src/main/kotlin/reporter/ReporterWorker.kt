@@ -37,6 +37,7 @@ import org.jetbrains.exposed.sql.Database
 import org.ossreviewtoolkit.model.Repository
 
 import org.slf4j.LoggerFactory
+import kotlin.time.measureTimedValue
 
 private val logger = LoggerFactory.getLogger(ReporterWorker::class.java)
 
@@ -63,7 +64,9 @@ internal class ReporterWorker(
          * The setup of environment is only needed by a reporter that creates source code bundles.
          * TODO: Find a better solution which would allow to set up environment only for a specific reporter if needed.
          */
-        val ortResult = ortRunService.generateOrtResult(ortRun, failIfRepoInfoMissing = false)
+        logger.debug("Start loading ORT result.")
+        val (ortResult, duration) = measureTimedValue { ortRunService.generateOrtResult(ortRun, failIfRepoInfoMissing = false) }
+        logger.debug("Finished loading ORT result. Duration: $duration")
         val startTime = Clock.System.now()
 
         if (ortResult.repository == Repository.EMPTY) {

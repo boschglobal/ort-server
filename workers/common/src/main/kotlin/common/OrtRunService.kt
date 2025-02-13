@@ -78,6 +78,11 @@ import org.ossreviewtoolkit.scanner.utils.FileListResolver
 import org.ossreviewtoolkit.scanner.utils.filterScanResultsByVcsPaths
 import org.ossreviewtoolkit.scanner.utils.getVcsPathsForProvenances
 
+import org.slf4j.LoggerFactory
+import kotlin.time.TimeSource
+
+private val logger = LoggerFactory.getLogger(OrtRunService::class.java)
+
 @Suppress("LongParameterList", "TooManyFunctions")
 class OrtRunService(
     private val db: Database,
@@ -220,6 +225,9 @@ class OrtRunService(
      * empty [Repository] object.
      */
     fun getOrtRepositoryInformation(ortRun: OrtRun, failIfMissing: Boolean = true) = db.blockingQuery {
+        logger.debug("Start loading repository information.")
+        val mark = TimeSource.Monotonic.markNow()
+
         val vcsId = ortRun.vcsId
         val vcsProcessedId = ortRun.vcsProcessedId
         val nestedRepositoryIds = ortRun.nestedRepositoryIds
@@ -249,6 +257,8 @@ class OrtRunService(
         val repositoryConfig =
             ortRun.repositoryConfigId?.let { repositoryConfigurationRepository.get(it)?.mapToOrt() }
                 ?: RepositoryConfiguration()
+
+        logger.debug("Finished loading repository information. Duration: ${mark.elapsedNow()}}")
 
         Repository(
             vcs = vcsInfo.mapToOrt(),
@@ -319,6 +329,9 @@ class OrtRunService(
      * is missing; otherwise, return an empty [Repository] object.
      */
     fun generateOrtResult(ortRun: OrtRun, failIfRepoInfoMissing: Boolean = true): OrtResult {
+        logger.debug("Start generating ORT result.")
+        val mark = TimeSource.Monotonic.markNow()
+
         val repository = getOrtRepositoryInformation(ortRun, failIfMissing = failIfRepoInfoMissing)
         val resolvedConfiguration = getResolvedConfiguration(ortRun)
         val analyzerRun = getAnalyzerRunForOrtRun(ortRun.id)
@@ -353,6 +366,8 @@ class OrtRunService(
             evaluatorRun = evaluatorRun?.mapToOrt(),
             resolvedConfiguration = resolvedConfiguration.mapToOrt()
         )
+
+        logger.debug("Finished generating ORT result. Duration: ${mark.elapsedNow()}}")
 
         return baseResult.copy(
             // Add common labels for all types of workers
@@ -396,6 +411,9 @@ class OrtRunService(
      * Store the provided [advisorRun].
      */
     fun storeAdvisorRun(advisorRun: AdvisorRun) {
+        logger.debug("Start storing advisor run.")
+        val mark = TimeSource.Monotonic.markNow()
+
         advisorRunRepository.create(
             advisorJobId = advisorRun.advisorJobId,
             startTime = advisorRun.startTime,
@@ -404,12 +422,17 @@ class OrtRunService(
             config = advisorRun.config,
             results = advisorRun.results
         )
+
+        logger.debug("Finished storing advisor run. Duration: ${mark.elapsedNow()}")
     }
 
     /**
      * Store the provided [analyzerRun].
      */
     fun storeAnalyzerRun(analyzerRun: AnalyzerRun) {
+        logger.debug("Start storing analyzer run.")
+        val mark = TimeSource.Monotonic.markNow()
+
         analyzerRunRepository.create(
             analyzerJobId = analyzerRun.analyzerJobId,
             startTime = analyzerRun.startTime,
@@ -421,44 +444,64 @@ class OrtRunService(
             issues = analyzerRun.issues,
             dependencyGraphs = analyzerRun.dependencyGraphs
         )
+
+        logger.debug("Finished storing analyzer run. Duration: ${mark.elapsedNow()}")
     }
 
     /**
      * Store the provided [evaluatorRun].
      */
     fun storeEvaluatorRun(evaluatorRun: EvaluatorRun) {
+        logger.debug("Start storing evaluator run.")
+        val mark = TimeSource.Monotonic.markNow()
+
         evaluatorRunRepository.create(
             evaluatorRun.evaluatorJobId,
             evaluatorRun.startTime,
             evaluatorRun.endTime,
             evaluatorRun.violations
         )
+
+        logger.debug("Finished storing evaluator run. Duration: ${mark.elapsedNow()}")
     }
 
     /**
      * Store the provided [reporterRun].
      */
     fun storeReporterRun(reporterRun: ReporterRun) {
+        logger.debug("Start storing reporter run.")
+        val mark = TimeSource.Monotonic.markNow()
+
         reporterRunRepository.create(
             reporterRun.reporterJobId,
             reporterRun.startTime,
             reporterRun.endTime,
             reporterRun.reports
         )
+
+        logger.debug("Finished storing reporter run. Duration: ${mark.elapsedNow()}")
     }
 
     fun storeNotifierRun(notifierRun: NotifierRun) {
+        logger.debug("Start storing notifier run.")
+        val mark = TimeSource.Monotonic.markNow()
+
         notifierRunRepository.create(
             notifierRun.notifierJobId,
             notifierRun.startTime,
             notifierRun.endTime
         )
+
+        logger.debug("Finished storing notifier run. Duration: ${mark.elapsedNow()}")
     }
 
     /**
      * Store the provided [repositoryInformation] associated with the [ortRunId].
      */
     fun storeRepositoryInformation(ortRunId: Long, repositoryInformation: Repository) {
+        logger.debug("Start storing repository information.")
+        val mark = TimeSource.Monotonic.markNow()
+
         db.blockingQuery {
             val vcsInfoDao = VcsInfoDao.getOrPut(repositoryInformation.vcs.mapToModel())
 
@@ -491,6 +534,8 @@ class OrtRunService(
             ortRunDao.vcsId = vcsInfoDao.id
             ortRunDao.vcsProcessedId = processedVcsInfoDao.id
         }
+
+        logger.debug("Finished storing repository information. Duration: ${mark.elapsedNow()}")
     }
 
     /**

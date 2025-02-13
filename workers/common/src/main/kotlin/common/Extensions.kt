@@ -35,7 +35,7 @@ import org.ossreviewtoolkit.model.yamlMapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-val logger: Logger = LoggerFactory.getLogger(ConfigManager::class.java)
+val extensionLogger: Logger = LoggerFactory.getLogger(ConfigManager::class.java)
 
 /**
  * Map the entries of all [PluginConfiguration.options] in this map using the provided [transform] function.
@@ -93,12 +93,12 @@ internal inline fun <reified T> getConfigFileWithDefault(
     getConfigFile: (path: String, context: Context?, exceptionHandler: (ConfigException) -> T) -> T
 ): T = if (path != null) {
     getConfigFile(path, context) {
-        logger.error("Could not get config file from path '$path'.")
+        extensionLogger.error("Could not get config file from path '$path'.")
         throw it
     }
 } else {
     getConfigFile(defaultPath, context) {
-        logger.warn("Could not get config file from default path '$defaultPath', returning default value.")
+        extensionLogger.warn("Could not get config file from default path '$defaultPath', returning default value.")
         fallbackValue
     }
 }

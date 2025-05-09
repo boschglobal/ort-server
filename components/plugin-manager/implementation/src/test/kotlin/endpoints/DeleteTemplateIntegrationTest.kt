@@ -20,17 +20,14 @@
 package org.eclipse.apoapsis.ortserver.components.pluginmanager.endpoints
 
 import io.kotest.assertions.ktor.client.shouldHaveStatus
-import io.kotest.matchers.collections.beEmpty
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNot
 
-import io.ktor.client.call.body
-import io.ktor.client.request.get
-import io.ktor.client.request.post
+import io.ktor.client.request.delete
 import io.ktor.http.HttpStatusCode
-
-import org.eclipse.apoapsis.ortserver.components.pluginmanager.PluginDescriptor
+import io.ktor.server.auth.authenticate
+import io.ktor.server.routing.routing
 import org.eclipse.apoapsis.ortserver.components.pluginmanager.PluginEventStore
+
 import org.eclipse.apoapsis.ortserver.components.pluginmanager.PluginService
 import org.eclipse.apoapsis.ortserver.components.pluginmanager.PluginTemplateEventStore
 import org.eclipse.apoapsis.ortserver.components.pluginmanager.PluginTemplateService
@@ -38,16 +35,18 @@ import org.eclipse.apoapsis.ortserver.components.pluginmanager.PluginType
 import org.eclipse.apoapsis.ortserver.components.pluginmanager.pluginManagerRoutes
 import org.eclipse.apoapsis.ortserver.shared.ktorutils.AbstractIntegrationTest
 
-import org.ossreviewtoolkit.plugins.advisors.vulnerablecode.VulnerableCodeFactory
-import org.ossreviewtoolkit.plugins.packagemanagers.node.npm.NpmFactory
+import org.ossreviewtoolkit.plugins.advisors.ossindex.OssIndexFactory
 
-class GetInstalledPluginsIntegrationTest : AbstractIntegrationTest({
-    lateinit var eventStore: PluginEventStore
+class DeleteTemplateIntegrationTest : AbstractIntegrationTest({
+    lateinit var pluginEventStore: PluginEventStore
     lateinit var pluginService: PluginService
     lateinit var pluginTemplateService: PluginTemplateService
 
+    val pluginType = PluginType.ADVISOR
+    val pluginId = OssIndexFactory.descriptor.id
+
     beforeEach {
-        eventStore = PluginEventStore(dbExtension.db)
+        pluginEventStore = PluginEventStore(dbExtension.db)
         pluginService = PluginService(dbExtension.db)
         pluginTemplateService = PluginTemplateService(
             dbExtension.db,
@@ -57,39 +56,39 @@ class GetInstalledPluginsIntegrationTest : AbstractIntegrationTest({
         )
     }
 
-
-    "GetInstalledPlugins" should {
-        "return all installed ORT plugins" {
+    "DeleteTemplate" should {
+        "delete a template if it exists" {
             integrationTestApplication(
-                routes = { pluginManagerRoutes(eventStore, pluginService, pluginTemplateService) }
+                routes = { pluginManagerRoutes(pluginEventStore, pluginService, pluginTemplateService) }
             ) { client ->
-                val response = client.get("/admin/plugins")
+                pluginTemplateService.updateOptions("template1", pluginType, pluginId, "test-user", emptyList())
 
-                response shouldHaveStatus HttpStatusCode.OK
-                val pluginDescriptors = response.body<List<PluginDescriptor>>()
-                enumValues<PluginType>().forEach { pluginType ->
-                    pluginDescriptors.filter { it.type == pluginType } shouldNot beEmpty()
-                }
+                client.delete("/admin/plugins/$pluginType/$pluginId/templates/template1") shouldHaveStatus
+                        HttpStatusCode.OK
+
+                pluginTemplateService.getTemplate("template1", pluginType, pluginId).isErr shouldBe true
             }
         }
 
-        "return if plugins are enabled or disabled" {
+        "return NotFound if the template does not exist" {
             integrationTestApplication(
-                routes = { pluginManagerRoutes(eventStore, pluginService, pluginTemplateService) }
+                routes = { pluginManagerRoutes(pluginEventStore, pluginService, pluginTemplateService) }
             ) { client ->
-                val npmType = PluginType.PACKAGE_MANAGER
-                val npmId = NpmFactory.descriptor.id
-                val vulnerableCodeType = PluginType.ADVISOR
-                val vulnerableCodeId = VulnerableCodeFactory.descriptor.id
+                client.delete("/admin/plugins/$pluginType/$pluginId/templates/non-existing") shouldHaveStatus
+                        HttpStatusCode.NotFound
+            }
+        }
 
-                client.post("/admin/plugins/$npmType/$npmId/disable") shouldHaveStatus HttpStatusCode.Accepted
-                val response = client.get("/admin/plugins")
+        "normalize the plugin ID" {
+            integrationTestApplication(
+                routes = { pluginManagerRoutes(pluginEventStore, pluginService, pluginTemplateService) }
+            ) { client ->
+                pluginTemplateService.updateOptions("template1", pluginType, pluginId, "test-user", emptyList())
 
-                response shouldHaveStatus HttpStatusCode.OK
-                val descriptors = response.body<List<PluginDescriptor>>()
+                client.delete("/admin/plugins/$pluginType/${pluginId.uppercase()}/templates/template1") shouldHaveStatus
+                        HttpStatusCode.OK
 
-                descriptors.find { it.type == npmType && it.id == npmId }?.enabled shouldBe false
-                descriptors.find { it.type == vulnerableCodeType && it.id == vulnerableCodeId }?.enabled shouldBe true
+                pluginTemplateService.getTemplate("template1", pluginType, pluginId).isErr shouldBe true
             }
         }
     }

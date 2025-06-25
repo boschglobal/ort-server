@@ -17,6 +17,23 @@
  * License-Filename: LICENSE
  */
 
+pluginManagement {
+    repositories {
+        maven {
+            name = "BoschArtifactoryPlugins"
+            url = uri("https://artifactory.boschdevcloud.com/artifactory/maven-central-remote/")
+            credentials {
+                username = providers.gradleProperty("bdc_artifactory_username").orNull ?: "osi9be"
+                password = providers.gradleProperty("bdc_artifactory_password").orNull
+                        ?: System.getenv("ORG_GRADLE_PROJECT_bdc_artifactory_password")
+                        ?: System.getenv("ARTIFACTORY_PASSWORD")
+            }
+        }
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
 // Enable type-safe project accessors, see:
 // https://docs.gradle.org/current/userguide/declaring_dependencies.html#sec:type-safe-project-accessors
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
@@ -118,6 +135,18 @@ plugins {
 
 dependencyResolutionManagement {
     repositories {
+        maven {
+            name = "BoschArtifactory"
+            url = uri("https://artifactory.boschdevcloud.com/artifactory/maven-central-remote/")
+            credentials {
+                username = providers.gradleProperty("bdc_artifactory_username").orNull ?: "osi9be"
+                password = providers.gradleProperty("bdc_artifactory_password").orNull
+                        ?: System.getenv("ORG_GRADLE_PROJECT_bdc_artifactory_password")
+                        ?: System.getenv("ARTIFACTORY_PASSWORD")
+            }
+        }
+
+        // Fallback to standard Maven Central if needed
         mavenCentral()
     }
 

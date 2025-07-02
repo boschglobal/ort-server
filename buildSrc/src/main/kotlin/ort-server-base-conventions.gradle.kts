@@ -20,14 +20,6 @@
 repositories {
     mavenCentral()
 
-    mavenLocal() {
-        name = "localOrt"
-
-        content {
-            includeGroupByRegex("org\\.ossreviewtoolkit(\\..*)?")
-        }
-    }
-
     exclusiveContent {
         forRepository {
             maven("https://jitpack.io")

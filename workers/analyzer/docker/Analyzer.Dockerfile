@@ -95,6 +95,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     tzdata \
     uuid-dev \
     unzip \
+    vim \
     wget \
     xz-utils \
     && rm -rf /var/lib/apt/lists/* \
@@ -191,7 +192,7 @@ RUN pip install --no-cache-dir -U \
     pipenv=="$PYTHON_PIPENV_VERSION" \
     poetry=="$PYTHON_POETRY_VERSION" \
     poetry-plugin-export=="$PYTHON_POETRY_PLUGIN_EXPORT_VERSION" \
-    python-inspector=="$PYTHON_INSPECTOR_VERSION" \
+    git+https://github.com/boschglobal/python-inspector.git@env-vars \
     setuptools=="$PYTHON_SETUPTOOLS_VERSION"
 RUN mkdir /tmp/conan2 && cd /tmp/conan2 \
     && wget https://github.com/conan-io/conan/releases/download/$CONAN2_VERSION/conan-$CONAN2_VERSION-linux-x86_64.tgz \

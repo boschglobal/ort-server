@@ -19,6 +19,13 @@
 
 rootProject.name = "buildSrc"
 
+pluginManagement {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
 dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {

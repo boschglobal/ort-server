@@ -39,6 +39,7 @@ import org.ossreviewtoolkit.utils.ort.createOrtTempDir
 
 import org.slf4j.LoggerFactory
 
+
 /**
  * An implementation of [ConfigFileProvider] that reads config files from Git and stores them to a local directory. The
  * directory is temporary and only exists for the lifetime of a job.
@@ -66,8 +67,6 @@ class GitConfigFileProvider internal constructor(
             return GitConfigFileProvider(gitUrl, createOrtTempDir())
         }
     }
-
-    private val git = GitFactory.create(historyDepth = 1)
 
     override fun resolveContext(context: Context): Context {
         val resolvedRevision = updateWorkingTree(context.name)
@@ -109,6 +108,8 @@ class GitConfigFileProvider internal constructor(
      */
     private fun updateWorkingTree(requestedRevision: String): String {
         synchronized(this) {
+            val git = GitFactory.create(historyDepth = 1)
+
             // TODO: There might be a better way to do check if the configDir already contains a Git repository.
             val revision = if (!configDir.resolve(".git").isDirectory) {
                 val initRevision = requestedRevision.takeUnless { it.isEmpty() } ?: git.getDefaultBranchName(gitUrl)
@@ -133,7 +134,31 @@ class GitConfigFileProvider internal constructor(
                 logger.debug("Updated Git working tree to revision '$revision' in $it.")
             }
 
+            clearHttpAuthCache()
+
             return workingTree.getRevision()
         }
+    }
+
+    /**
+     * Clear the HTTP authentication cache. This uses reflection to access internal JDK classes.
+     * Requires JVM argument: --add-opens java.base/sun.net.www.protocol.http=ALL-UNNAMED
+     */
+    private fun clearHttpAuthCache() = runCatching {
+        logger.debug("Clearing HTTP authentication cache.")
+        
+        // Access the AuthCacheImpl class which holds the static caches map
+        val authCacheImplClass = Class.forName("sun.net.www.protocol.http.AuthCacheImpl")
+        val cachesField = authCacheImplClass.getDeclaredField("caches")
+        cachesField.isAccessible = true
+        
+        @Suppress("UNCHECKED_CAST")
+        val caches = cachesField.get(null) as? Map<*, *>
+        caches?.let {
+            (it as java.util.Map<*, *>).clear()
+            logger.debug("Successfully cleared HTTP authentication cache.")
+        }
+    }.onFailure { exception ->
+        logger.warn("Failed to clear HTTP authentication cache: ${exception.message}", exception)
     }
 }

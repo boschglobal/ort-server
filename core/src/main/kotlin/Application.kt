@@ -35,7 +35,6 @@ fun Application.module() {
 
     configureKoin()
     configureAuthentication(get(), get())
-    configureLifecycle()
     configureStatusPages()
     configureRouting()
     configureSerialization()

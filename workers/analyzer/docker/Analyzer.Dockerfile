@@ -35,7 +35,7 @@ ARG GLEAM_VERSION=1.13.0
 ARG GO_VERSION=1.25.0
 ARG HASKELL_STACK_VERSION=2.13.1
 ARG NODEJS_VERSION=24.10.0
-ARG NUGET_INSPECTOR_VERSION=0.9.12
+ARG NUGET_INSPECTOR_COMMIT=62bc3eb32e3c7fb991b4e88577b9130ad5b55a65
 ARG PIP_VERSION=25.2.0
 ARG PYENV_GIT_TAG=v2.6.11
 ARG PYTHON_INSPECTOR_VERSION=0.15.0
@@ -380,7 +380,7 @@ COPY --from=swiftbuild /opt/swift /opt/swift
 FROM ort-base-image AS dotnetbuild
 
 ARG DOTNET_VERSION
-ARG NUGET_INSPECTOR_VERSION
+ARG NUGET_INSPECTOR_COMMIT
 
 ENV DOTNET_HOME=/opt/dotnet
 ENV NUGET_INSPECTOR_HOME=$DOTNET_HOME
@@ -398,8 +398,16 @@ RUN mkdir -p $DOTNET_HOME \
     fi
 
 RUN mkdir -p $DOTNET_HOME/bin \
-    && curl -L https://github.com/nexB/nuget-inspector/releases/download/v$NUGET_INSPECTOR_VERSION/nuget-inspector-v$NUGET_INSPECTOR_VERSION-linux-x64.tar.gz \
-    | tar --strip-components=1 -C $DOTNET_HOME/bin -xz \
+    && git clone https://github.com/aboutcode-org/nuget-inspector.git /tmp/nuget-inspector \
+    && git -C /tmp/nuget-inspector checkout $NUGET_INSPECTOR_COMMIT \
+    && dotnet publish \
+        --runtime linux-x64 \
+        --self-contained true \
+        --configuration Release \
+        -p:Version="0.9.12-$(echo "$NUGET_INSPECTOR_COMMIT" | cut -c1-7)" \
+        --output $DOTNET_HOME/bin \
+        /tmp/nuget-inspector/src/nuget-inspector/nuget-inspector.csproj \
+    && rm -rf /tmp/nuget-inspector \
     # Prune .NET installation: keep only the runtime needed for nuget-inspector.
     && rm -rf $DOTNET_HOME/{templates,packs,sdk,sdk-manifests} \
     && rm -rf $DOTNET_HOME/shared/Microsoft.AspNetCore.App
